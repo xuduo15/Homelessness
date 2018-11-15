@@ -1,0 +1,77 @@
+library(sp)
+library(rgdal)
+library(leaflet)
+library(dplyr)
+
+Services=read.csv("311.csv",header=T,sep=",")
+
+library(shiny)
+
+ui <- fluidPage(
+  
+  titlePanel(title=h4("311 Call and Crime", align="center")),
+  
+  mainPanel(
+    tabsetPanel(
+      tabPanel("311",leafletOutput("Map_311")),
+      tabPanel("Crime",leafletOutput("Map_Crime"))
+    )))
+
+server <- function(input,output) {
+  
+  output$Map_311 <- renderLeaflet({
+    
+    Services=read.csv("311.csv",header=T,sep=",") 
+    Services=Services %>%
+      select("LATITUDE","LONGITUDE","STATUS","POLICEPRECINCT")
+    
+    
+    Services_sign <- makeIcon(
+      iconUrl = "http://laoblogger.com/images/clipart-telephone-symbol-1.jpg",
+      iconWidth = 31*215/230, iconHeight = 31,
+      iconAnchorX = 31*215/230/2, iconAnchorY = 16
+    )
+    ### Can use iconUrl change the symbol; remember to add icon=crime_sign under the following "addMarkers"
+    map_Services <- data.frame(lat=Services$LATITUDE,
+                               lng=Services$LONGITUDE)  
+    map_Services %>%
+      leaflet() %>%
+      addTiles() %>% # bring to mapping data
+      addMarkers(icon=Services_sign,
+                 lng=Services$LONGITUDE, 
+                 lat=Services$LATITUDE, 
+                 popup=paste("STATUS:",Services$STATUS, ";","POLICEPRECINCT:",Services$POLICEPRECINCT),
+                 clusterOptions=markerClusterOptions()) %>% # Can add different big cycles to group the dataset
+      addCircles(~lng, ~lat, popup=Services$CRIME.CODE, weight = 3, radius=31, 
+                 color="#ffa500", stroke = TRUE, fillOpacity = 0.8)
+  })
+  
+  output$Map_Crime <- renderLeaflet({
+    
+    crime=read.csv("crime_test.csv",header=T,sep=",") 
+    
+    crime=crime %>%
+      select("LATITUDE","LONGITUDE","AREA.NAME","CRIME.CODE.DESCRIPTION")
+    
+    crime_sign <- makeIcon(
+      iconUrl = "https://www.besmartee.com/images/blog/113-what-makes-a-bad-real-estate-agent.png",
+      iconWidth = 31*215/230, iconHeight = 31,
+      iconAnchorX = 31*215/230/2, iconAnchorY = 16)
+    
+    map_crime <- data.frame(lat=crime$LATITUDE,
+                            lng=crime$LONGITUDE)  
+    map_crime %>%
+      leaflet() %>%
+      addTiles() %>% # bring to mapping data
+      addMarkers(icon=crime_sign,
+                 lng=crime$LONGITUDE, 
+                 lat=crime$LATITUDE, 
+                 popup=paste("AREA.NAME:",crime$AREA.NAME,";", "CRIME.CODE.DESCRIPTION:", crime$CRIME.CODE.DESCRIPTION),
+                 clusterOptions=markerClusterOptions()) %>% 
+      addCircles(~lng, ~lat, popup=crime$CRIME.CODE, weight = 3, radius=30, 
+                 color="#ffa500", stroke = TRUE, fillOpacity = 0.8)   ### addCircles:Add many small spots in the map -> Better to compare the density
+  })
+}
+
+shinyApp(ui = ui, server = server)
+
