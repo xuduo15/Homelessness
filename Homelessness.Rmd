@@ -1,3 +1,10 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
 library(sp)
 library(rgdal)
 library(leaflet)
@@ -75,3 +82,4 @@ server <- function(input,output) {
 
 shinyApp(ui = ui, server = server)
 
+```
